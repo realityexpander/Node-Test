@@ -5,21 +5,31 @@ var fs = require('fs');
 var http = require('http');
 var {parse} = require('querystring');
 
+// var con = mysql.createConnection({
+//   host: "localhost",
+//   user: "root",
+//   password: "password",
+//   database: "giraffe"
+// });
+
 var con = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "password",
-  database: "giraffe"
+//   host: "https://arn:aws:rds:us-east-1:621128930309:db:realityexpanderdbinstances",
+  host: "realityexpanderdbinstances.creynsjkl6ar.us-east-1.rds.amazonaws.com",
+  user: "realityexpander",
+  password: "Zapper2041",
+  database: "new_schema",
+  port: '3306'
 });
 
 con.connect(function(err) {
   if (err) {
-    console.error('Error:- ' + err.stack);
+    console.error('Error:- ' + err.stack); 
     return;
   }
 
   http.createServer(function(req, res) {
     console.log(req.url);
+    console.log(con.config.host);
     if (req.url == "/json/version" || req.url == "/json" || req.url == '/favicon.ico')
       return;
 
@@ -52,7 +62,7 @@ con.connect(function(err) {
             } else {
               request.column = request.previousColumn;
               request.item = request.previousItem;
-              viewDatabase(requestPath, request); 
+              renderViewDatabase(requestPath, request); 
             }
           });
         });
@@ -68,7 +78,7 @@ con.connect(function(err) {
       if(JSON.stringify(request) === JSON.stringify({}) ){
         renderDefaultViewDatabase(requestPath, request);
       } else {
-        viewDatabase(requestPath, request); 
+        renderViewDatabase(requestPath, request); 
       }
     }
 
@@ -76,13 +86,14 @@ con.connect(function(err) {
     if(requestPath === '/json') {
       // http://localhost:8075/json?table=employee&column=emp_id&item=%
       renderJSONForDatabase(requestPath, request);
+      return;
     }
 
     function renderDefaultViewDatabase(requestPath, request) {
       request.table = 'employee';
       request.column = 'emp_id';
       request.item = '%';
-      viewDatabase(requestPath, request); 
+      renderViewDatabase(requestPath, request); 
     }
     
     function renderJSONForDatabase(requestPath, request) {
@@ -98,7 +109,7 @@ con.connect(function(err) {
       });
     }
 
-    function viewDatabase(requestPath, request) {
+    function renderViewDatabase(requestPath, request) {
       // Set the Headers and Head tags for css
       res.writeHead(200, {
         'Content-Type': 'text/html'
