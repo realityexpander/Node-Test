@@ -28,15 +28,12 @@ con.connect(function(err) {
 
     // Route: Default path
     if (requestPath === '/') {
-      request.table = 'employee';
-      request.column = 'emp_id';
-      request.item = '%';
-      viewDatabase(requestPath, request); //.table, request.column, request.item);
+      renderDefaultViewDatabase(requestPath, request);
     }
 
     // Route: Edit an Element
     if (requestPath === "/edit") {
-      if (req.method === 'POST') {
+      if (req.method === 'POST') { // only allow edit if there is POST data
         collectRequestData(req, request => {
           console.log(request);
           //res.write(`Parsed data belonging to ${JSON.stringify(request)}`);
@@ -53,15 +50,14 @@ con.connect(function(err) {
               res.end();
               return;
             } else {
-              viewDatabase(requestPath, request); //.table, request.previousColumn, request.previousItem);
+              request.column = request.previousColumn;
+              request.item = request.previousItem;
+              viewDatabase(requestPath, request); 
             }
           });
         });
       } else { // show default data, if user attempts a refresh on Edit
-        request.table = 'employee';
-        request.column = 'emp_id';
-        request.item = '%';
-        viewDatabase(requestPath, request); //.table, request.column, request.item);
+        renderDefaultViewDatabase(requestPath, request);
       }
 
     }
@@ -69,13 +65,40 @@ con.connect(function(err) {
     // Route: View table
     // http://localhost:8075/view?database=employee&emp_id=10_
     if (requestPath === '/view') {
-      viewDatabase(requestPath, request); //.table, request.column, request.item);
+      if(JSON.stringify(request) === JSON.stringify({}) ){
+        renderDefaultViewDatabase(requestPath, request);
+      } else {
+        viewDatabase(requestPath, request); 
+      }
     }
 
-    function viewDatabase(requestPath, request) { //request.table, requestColumn, requestItem) {
-      //var query = 'SELECT employee.first_name, employee.last_name FROM employee WHERE employee.emp_id IN (SELECT works_with.emp_id FROM works_with WHERE works_with.total_sales > 30000)'
+    // Route: View JSON
+    if(requestPath === '/json') {
+      // http://localhost:8075/json?table=employee&column=emp_id&item=%
+      renderJSONForDatabase(requestPath, request);
+    }
+
+    function renderDefaultViewDatabase(requestPath, request) {
+      request.table = 'employee';
+      request.column = 'emp_id';
+      request.item = '%';
+      viewDatabase(requestPath, request); 
+    }
+    
+    function renderJSONForDatabase(requestPath, request) {
       var query = 'SELECT * FROM ' + request.table + ' WHERE ' + request.column + ' LIKE ?';
 
+      con.query(query, [request.item], function(err, result) {
+        if(err) {
+          res.end(JSON.stringify(err));
+        } else {
+          res.end(JSON.stringify(result));
+        }
+        return;
+      });
+    }
+
+    function viewDatabase(requestPath, request) {
       // Set the Headers and Head tags for css
       res.writeHead(200, {
         'Content-Type': 'text/html'
@@ -83,9 +106,14 @@ con.connect(function(err) {
       var data = fs.readFileSync('styles.css', 'utf8');
       res.write(data);
 
+      // Get the tables for this database
       con.query('SHOW TABLES', function(err, result) {
-        // Get the tables for this database
-        // Heading
+        
+        // http://localhost:8075/view?database=employee&emp_id=10_
+        // var query = 'SELECT employee.first_name, employee.last_name FROM employee WHERE employee.emp_id IN (SELECT works_with.emp_id FROM works_with WHERE works_with.total_sales > 30000)'
+        var query = 'SELECT * FROM ' + request.table + ' WHERE ' + request.column + ' LIKE ?';
+
+        // Heading shows basic URL data
         res.write(`<h1>${requestPath}:${JSON.stringify(request)}</h1>`);
         res.write(`<h3>${query}[${request.item}]</h3>`);
 
@@ -127,7 +155,6 @@ con.connect(function(err) {
           res.write('</tr>');
 
           // Show the rows
-          // http://localhost:8075/view?database=employee&emp_id=10_
           con.query(query, [request.item], function(err, result) {
             if (err) {
               res.write('</tbody>');
