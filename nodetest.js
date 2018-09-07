@@ -5,21 +5,34 @@ var fs = require('fs');
 var http = require('http');
 var {parse} = require('querystring');
 
+// Local access
+//nodemon --inspect nodetest.js
+var con = mysql.createConnection({
+  host: "localhost",
+  user: "root",
+  password: "password",
+  database: "giraffe"
+});
+
+//https://console.aws.amazon.com/rds/home?region=us-east-1#dbinstance:id=realityexpanderdbinstances
 // var con = mysql.createConnection({
-//   host: "localhost",
-//   user: "root",
-//   password: "password",
-//   database: "giraffe"
+// //   host: "https://arn:aws:rds:us-east-1:621128930309:db:realityexpanderdbinstances",
+//   host: "realityexpanderdbinstances.creynsjkl6ar.us-east-1.rds.amazonaws.com",
+//   user: "realityexpander",
+//   password: "Zapper2041",
+//   database: "new_schema",
+//   port: '3306'
 // });
 
-var con = mysql.createConnection({
-//   host: "https://arn:aws:rds:us-east-1:621128930309:db:realityexpanderdbinstances",
-  host: "realityexpanderdbinstances.creynsjkl6ar.us-east-1.rds.amazonaws.com",
-  user: "realityexpander",
-  password: "Zapper2041",
-  database: "new_schema",
-  port: '3306'
-});
+// https://www.npmjs.com/package/mysql
+// var pool = mysql.createPool({
+//   connectionLimit: 10,
+//   host: "realityexpanderdbinstances.creynsjkl6ar.us-east-1.rds.amazonaws.com",
+//   user: "realityexpander",
+//   password: "Zapper2041",
+//   database: "new_schema",
+//   port: '3306'
+// });
 
 con.connect(function(err) {
   if (err) {
